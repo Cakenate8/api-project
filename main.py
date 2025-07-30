@@ -2,15 +2,15 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
-from sqlalchemy import ForeignKey, Table, Column, String, Integer, select, delete
-from marshmallow import ValidationError, fields
-from typing import List, Optional
-from datetime import date
+from sqlalchemy import ForeignKey, String, Column, select, Date, Float
+from marshmallow import ValidationError
+from typing import List 
+
 
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "mysql+mysqlconnector://root:Donyseus%401@localhost/rest_api_project"
+    "mysql+mysqlconnector://root:Sabres26.@localhost/rest_api_project"
 )
  
 
@@ -30,19 +30,19 @@ class Customer(Base):
     __tablename__ = "Customer"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(db.String(200), nullable=False)
-    email: Mapped[str] = mapped_column(db.String(200))
-    address: Mapped[str] = mapped_column(db.String(250))
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    email: Mapped[str] = mapped_column(String(200))
+    address: Mapped[str] = mapped_column(String(250))
 
-    orders: Mapped[List["Orders"]] = db.relationship(back_populates="customer")
+    orders: Mapped[List["Orders"]] = relationship(back_populates="customer")
 
 
 # Assocition Table for Orders and Products
 order_products = db.Table(
     "Order_Products",
     Base.metadata,
-    db.Column("order_id", db.ForeignKey("orders.id")),
-    db.Column("product_id", db.ForeignKey("products.id")),
+    Column("order_id", ForeignKey("orders.id")),
+    Column("product_id", ForeignKey("products.id")),
 )
 
 
@@ -50,9 +50,9 @@ class Orders(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    order_date: Mapped[date] = mapped_column(db.Date, nullable=False)
+    order_date: Mapped[Date] = mapped_column(Date, nullable=False)
 
-    customer_id: Mapped[int] = mapped_column(db.ForeignKey("Customer.id"))
+    customer_id: Mapped[int] = mapped_column(ForeignKey("Customer.id"))
 
     customer: Mapped["Customer"] = db.relationship(back_populates="orders")
 
@@ -65,8 +65,8 @@ class Products(Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    product_name: Mapped[str] = mapped_column(db.String(250), nullable=False)
-    price: Mapped[float] = mapped_column(db.Float, nullable=False)
+    product_name: Mapped[str] = mapped_column(String(250), nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
     orders: Mapped[List["Orders"]] = db.relationship(
         secondary=order_products, back_populates="products"
     )
@@ -149,7 +149,7 @@ def get_customers():
     per_page = request.args.get("per_page", 5, type=int)   #sets limit of 5 products per page
     # paginates the products based the page and per_page variables 
     # use " customers?page=1&per_page=5 " formaat on Postman to view pages
-    pagination = db.paginate(db.select(Customer), page=page, per_page=per_page, error_out=False)
+    pagination = db.paginate(select(Customer), page=page, per_page=per_page, error_out=False)
     customers = pagination.items
     return jsonify({
         "customers": customers_schmea.dump(customers),
